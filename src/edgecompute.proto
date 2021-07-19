@@ -1,0 +1,15 @@
+syntax = "proto3"
+
+package edgecompute;
+
+service Compute {
+
+}
+
+
+message {
+    string model = 1; //模型名称
+    bytes tensor_content = 2; //传递的tensor
+    string part = 3; //左半部、右半部？
+    int32 cp = 4; // cut point 模型切分的节点
+}
