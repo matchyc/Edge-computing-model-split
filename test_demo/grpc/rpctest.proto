@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+service User {
+    rpc login(LoginRequest) returns (APIResponse);
+    rpc logout(Empty) returns (APIResponse);
+}
+  
+message LoginRequest{
+    string username = 1;
+    string passwd = 2;
+}
+  
+message APIResponse{
+    string responsemessage = 1;
+    int32 responseCode = 2;
+}
+  
+message Empty{
+  
+}
