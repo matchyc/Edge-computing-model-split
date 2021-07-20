@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+service Infer {
+    rpc infer_part(PartitionInfo) returns(ForwardResult);
+}
+
+message PartitionInfo {
+    string model_id = 1;    // indicate the model
+    bytes tensor_content = 2; // tensor data
+    int32 cp = 3;   // cut point
+}
+
+message ForwardResult {
+    int32 code = 1; // ret code
+    bytes tensor_content = 2; // tensor data
+}
