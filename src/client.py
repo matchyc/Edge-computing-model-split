@@ -1,3 +1,9 @@
+# mainly for MNIST-alike model
+# demo use MNIST and simple Convlutional neural network
+# Date: 2021 - 07 - 20
+# Meng_chen@bupt.edu.cn
+# gRPC client
+
 import torch
 from torch.autograd.grad_mode import no_grad
 import torch.nn as nn
@@ -32,9 +38,6 @@ model_param_path = '../modelparam/' + model_id.upper() +'.pt'
 def front_end_infer(cp):
     with torch.no_grad():
         output = model(manager.input_data, 0,int(cp))
-    # temp_file = str(uuid.uuid1())
-    # print(buffer.getvalue())
-    # return output
     return output
     
 def send_to_server(stub, cp, content):
@@ -66,19 +69,15 @@ def run():
     dataiter = iter(manager.test_loader)
     manager.input_data, manager.label = dataiter.next()
     manager.load_params(model, model_param_path)
-    with grpc.insecure_channel('localhost:10086') as channel:
+
+    with grpc.insecure_channel('localhost:10087') as channel:
         stub = model_split_pb2_grpc.InferStub(channel)
         print("Now we begin front end inference...")
         output = front_end_infer(5) # hard-code
-        # data = front_end_infer(5)        
         buffer = io.BytesIO()
         torch.save(output, buffer)
         data = buffer.getvalue()
-        # with codecs.open(buffer, 'rb', encoding='utf8') as f:
-            # f.seek(0)
-            # data = f.read()
         print("Begin to send intermediate results...")
-        # os.remove(temp_file)
         send_to_server(stub, 5, data)
 
 if __name__ == '__main__':

@@ -1,0 +1,6 @@
+version: '3'
+services:
+  server_1:
+    build: .
+    ports:
+      - "10087:10086" # host:container

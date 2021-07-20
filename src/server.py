@@ -31,24 +31,16 @@ class InferServicer(model_split_pb2_grpc.InferServicer):
     def infer_part(self, request, context):
         try:
             model = model_dict[request.model_id]
-            model_param_path = '../modelparam/' + request.model_id.upper() +'.pt'
+            model_param_path = '/code/modelparam/' + request.model_id.upper() +'.pt'
             manager.load_params(model, model_param_path)
             buffer = io.BytesIO(request.tensor_content)
-            # print(type(request.tensor_content))
-            # buffer.write(request.tensor_content)
-            # binary_tensor = request.tensor_content
             input = torch.load(buffer)
-            # print(request.tensor_content)
             with torch.no_grad():
                 output = model(input, request.cp, model.layer_size)
-            # temp_file = str(uuid.uuid1())
             print(output.size())
             buffer = io.BytesIO()
             torch.save(output, buffer)
             data = buffer.getvalue()
-            # with codecs.open(buffer, 'rb') as f:
-                # f.seek(0)
-                # data = f.read()
             return model_split_pb2.ForwardResult(tensor_content=data,
                                                  code=200)
         except:
