@@ -4,6 +4,7 @@
 # Meng_chen@bupt.edu.cn
 # gRPC client
 
+from apscheduler.schedulers.blocking import BlockingScheduler
 import torch
 from torch.autograd.grad_mode import no_grad
 import torch.nn as nn
@@ -24,6 +25,7 @@ import uuid
 import codecs
 import os
 import io
+from apscheduler.schedulers.background import BlockingScheduler, BackgroundScheduler
 
 parser = argparse.ArgumentParser('传入参数：***.py')
 parser.add_argument('-n','--name', default='mnist')
@@ -34,6 +36,9 @@ model_id = args.name
 model = model_dict[args.name]
 model_param_path = '../modelparam/' + model_id.upper() +'.pt'
 
+server_list = ['localhost:10086', 'localhost:10087']
+
+server_index = 0
 
 def front_end_infer(cp):
     with torch.no_grad():
@@ -65,21 +70,30 @@ def send_to_server(stub, cp, content):
 
 
 def run():
+    global server_index
     manager.prepare_data(model_id)
     dataiter = iter(manager.test_loader)
     manager.input_data, manager.label = dataiter.next()
     manager.load_params(model, model_param_path)
 
-    with grpc.insecure_channel('localhost:10087') as channel:
+    with grpc.insecure_channel(server_list[server_index]) as channel:
         stub = model_split_pb2_grpc.InferStub(channel)
         print("Now we begin front end inference...")
         output = front_end_infer(5) # hard-code
         buffer = io.BytesIO()
         torch.save(output, buffer)
         data = buffer.getvalue()
-        print("Begin to send intermediate results...")
+        print("Begin to send intermediate results...| Target server: {}".format(server_list[server_index]))
         send_to_server(stub, 5, data)
+    server_index = (server_index + 1) % len(server_list)
 
 if __name__ == '__main__':
+    scheduler = BlockingScheduler()
+    scheduler.add_job(run, 'interval', seconds=3)
+    print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C  '))
     logging.basicConfig()
-    run()
+    
+    try:
+        scheduler.start()
+    except (KeyboardInterrupt, SystemExit):
+        pass
