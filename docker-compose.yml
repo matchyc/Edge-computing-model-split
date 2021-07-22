@@ -3,4 +3,9 @@ services:
   server_1:
     build: .
     ports:
-      - "10087:10086" # host:container
+      - "10086:10086" # host:container
+
+  server_2:
+    build: .
+    ports:
+      - "10087:10086"

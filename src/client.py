@@ -4,39 +4,30 @@
 # Meng_chen@bupt.edu.cn
 # gRPC client
 
-from apscheduler.schedulers.blocking import BlockingScheduler
-import torch
-from torch.autograd.grad_mode import no_grad
-import torch.nn as nn
-import torch.tensor as tensor
-from tqdm import tqdm
-import torch.nn.functional as F
-import torch.optim as optim
-from torchvision import datasets, transforms
-import model_split_pb2
-import model_split_pb2_grpc
-import grpc
-from concurrent import futures
-import logging
-import pickle
-from model_configuration import *
-import argparse
-import uuid
-import codecs
+
 import os
 import io
+import grpc
+import torch
+import logging
+import argparse
+import torch.nn as nn
+import model_split_pb2
+import model_split_pb2_grpc
+import torch.tensor as tensor
+from model_configuration import *
+from torch.autograd.grad_mode import no_grad
 from apscheduler.schedulers.background import BlockingScheduler, BackgroundScheduler
 
-parser = argparse.ArgumentParser('传入参数：***.py')
-parser.add_argument('-n','--name', default='mnist')
-
+parser = argparse.ArgumentParser()
+parser.add_argument('-n','--name', default='mnist') # default: mnist
 args = parser.parse_args()
 
 model_id = args.name
-model = model_dict[args.name]
-model_param_path = '../modelparam/' + model_id.upper() +'.pt'
+model = model_dict[args.name] # get indicated model
+model_param_path = '../modelparam/' + model_id.upper() +'.pt' # uniform path
 
-server_list = ['localhost:10086', 'localhost:10087']
+server_list = ['localhost:10086', 'localhost:10087'] # add more
 
 server_index = 0
 
@@ -71,21 +62,21 @@ def send_to_server(stub, cp, content):
 
 def run():
     global server_index
-    manager.prepare_data(model_id)
-    dataiter = iter(manager.test_loader)
-    manager.input_data, manager.label = dataiter.next()
-    manager.load_params(model, model_param_path)
+    manager.prepare_data(model_id) # get data by manager
+    dataiter = iter(manager.test_loader) # just get data nothing...
+    manager.input_data, manager.label = dataiter.next() 
+    manager.load_params(model, model_param_path) # load trained parameters
 
-    with grpc.insecure_channel(server_list[server_index]) as channel:
+    with grpc.insecure_channel(server_list[server_index]) as channel: # server_index indicate the server for this request
         stub = model_split_pb2_grpc.InferStub(channel)
         print("Now we begin front end inference...")
-        output = front_end_infer(5) # hard-code
-        buffer = io.BytesIO()
+        output = front_end_infer(5) # hard-code for now could be changed easily
+        buffer = io.BytesIO() # io bytes buffer for temporarily store tensor
         torch.save(output, buffer)
         data = buffer.getvalue()
         print("Begin to send intermediate results...| Target server: {}".format(server_list[server_index]))
-        send_to_server(stub, 5, data)
-    server_index = (server_index + 1) % len(server_list)
+        send_to_server(stub, 5, data) # rpc
+    server_index = (server_index + 1) % len(server_list) # update server_index
 
 if __name__ == '__main__':
     scheduler = BlockingScheduler()
