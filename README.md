@@ -1,5 +1,5 @@
 # Edge-computing-model-split
-
+simply reproduction for parper in INFOCOM2020, NCIR Intern.
 ## Requirements
 ```
 apt install docker
